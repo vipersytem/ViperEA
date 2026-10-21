@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0f1e">
+<title>Viper EA</title>
+<style>
+  :root{
+    --bg:#0a0f1e; --bg2:#070b16; --card:#0d1b2a; --card2:#102338;
+    --cyan:#2bd9ff; --cyan-dim:#1c8fa8; --line:rgba(43,217,255,.30);
+    --text:#eaf4f8; --muted:#7fa6c0; --green:#35e07a; --red:#ef5b52; --amber:#f2b84b;
+    --teal:#12aebd; --teal-dark:#0e8f9c; --mint:#d9f7ea; --field:#e7eef0; --field-text:#0b2a2e;
+    --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  button{font-family:inherit;cursor:pointer}
+  input{font-family:inherit}
+  .screen{display:none;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;padding-top:var(--safe-t)}
+  .screen.active{display:flex}
+  @media (min-width:600px){ .screen{max-width:480px;margin:0 auto;border-left:1px solid rgba(43,217,255,.12);border-right:1px solid rgba(43,217,255,.12)} }
+  .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .grow{flex:1}
+  :focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+
+  /* ---------- top bar for scanner screens ---------- */
+  .topbar{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid rgba(43,217,255,.12)}
+  .back{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--cyan);font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center}
+  .topbar h2{margin:0;font-size:15px;letter-spacing:1.6px;color:var(--cyan);font-weight:700}
+  .pill{margin-left:auto;font-size:11px;color:var(--cyan);border:1px solid var(--line);border-radius:20px;padding:5px 10px;background:var(--card)}
+  .pad{padding:16px 16px 120px}
+
+  /* ---------- cards / generic ---------- */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:14px}
+  .label{font-size:10.5px;letter-spacing:1.4px;color:var(--muted);margin-bottom:4px;font-weight:600}
+  .cyan-title{color:var(--cyan);font-size:11px;letter-spacing:2px;font-weight:700;margin:18px 2px 8px}
+  .btn{width:100%;padding:15px;border-radius:14px;border:1px solid var(--cyan);background:linear-gradient(180deg,#0f4a5a,#0a3340);color:#dffaff;font-weight:700;letter-spacing:1px;font-size:14px}
+  .btn:disabled{opacity:.45}
+  .btn.buy{background:linear-gradient(180deg,#14804a,#0d5c34);border-color:#35e07a;color:#eafff2}
+  .btn.sell{background:linear-gradient(180deg,#b6433b,#862d27);border-color:#ef5b52;color:#fff0ee}
+  .btn.ghost{background:var(--card);color:var(--cyan);border-color:var(--line)}
+  .row{display:flex;gap:10px}
+  .row > *{flex:1}
+  .chip{display:inline-block;padding:6px 12px;border-radius:16px;border:1px solid var(--line);background:#0b2a38;color:#bfeaf5;font-size:12px;margin:0 6px 6px 0}
+  .chip.sel{background:var(--cyan);color:#04212a;border-color:var(--cyan);font-weight:700}
+  .muted{color:var(--muted)}
+  .err-box{background:rgba(239,91,82,.10);border:1px solid rgba(239,91,82,.4);color:#ffd7d3;border-radius:12px;padding:12px;font-size:13px;line-height:1.45}
+  .disclaimer{font-size:11px;color:#56707f;text-align:center;margin:12px 0 4px}
+
+  /* ---------- onboarding (dark, mint) ---------- */
+  #onboard{background:#030706}
+  #onboard .back-circle{width:38px;height:38px;border-radius:50%;border:1px solid #7fd9b3;margin:16px 0 0 16px;display:flex;align-items:center;justify-content:center;color:#d9f7ea}
+  .logo-ring{width:130px;height:130px;border:2px solid var(--mint);border-radius:34px;margin:28px auto 22px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 22px rgba(217,247,234,.15)}
+  .logo-sq{width:100px;height:100px;background:#fff;border-radius:20px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .logo-sq img{width:100%;height:100%;object-fit:cover}
+  h1.serif{font-family:Georgia,'Times New Roman',serif;text-align:center;letter-spacing:5px;font-size:26px;margin:0 0 10px}
+  .rule{width:60px;height:1px;background:#7fd9b3;margin:0 auto 24px}
+  .field{background:#0c1211;border:1px solid #1c2624;border-radius:14px;padding:12px 16px;margin:0 20px 14px;display:flex;gap:12px;align-items:center}
+  .field .ic{width:36px;height:36px;border-radius:10px;background:#12201d;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#7fd9b3}
+  .field .fld-text{flex:1;min-width:0}
+  .field label{display:block;font-size:10px;letter-spacing:1px;color:#7fd9b3;margin-bottom:2px;text-transform:uppercase}
+  .field input{width:100%;background:transparent;border:none;color:#fff;padding:0;font-size:15px;outline:none}
+  .field input::placeholder{color:#5c6a67}
+  .tag{background:#173330;color:#7fd9b3;font-size:9px;padding:2px 7px;border-radius:5px;letter-spacing:.5px}
+  .hint{text-align:center;color:#607370;font-size:12px;margin:2px 0 20px}
+  .proceed{margin:0 20px;padding:16px;border-radius:30px;background:transparent;border:1px solid var(--teal);color:var(--mint);font-weight:700;letter-spacing:1px;font-size:14px;box-shadow:0 0 16px rgba(18,174,189,.35)}
+
+  /* ---------- teal screens (license / broker) ---------- */
+  .teal-screen{background:var(--teal);color:#04211f}
+  .teal-screen input{width:100%;border:none;background:var(--field);color:var(--field-text);padding:15px 16px;border-radius:10px;font-size:15px;outline:none}
+  .teal-screen input::placeholder{color:#5b7679}
+  .tfield{margin:0 18px 14px;position:relative}
+  .black-btn{margin:6px 18px 0;padding:15px;border-radius:8px;border:none;background:#05100f;color:#fff;font-weight:700;letter-spacing:.5px;font-size:14px}
+  .teal-screen h2.center{text-align:center;font-size:19px;letter-spacing:1px;margin:0 0 18px}
+  .banner{margin:0 18px 16px;background:var(--field);border-radius:10px;padding:12px 14px;font-size:13px;color:#7a5a00;font-weight:600;text-align:center}
+  .broker-tabs{display:flex;gap:10px;padding:16px}
+  .broker-tab{flex:1;text-align:center;padding:12px 0;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:.5px;color:#fff;background:rgba(0,0,0,.18)}
+  .broker-tab.active{background:#2fae5a}
+  .live-dot{width:10px;height:10px;border-radius:50%;background:#9aa;margin:4px 0 10px 18px}
+  .live-dot.on{background:#35e07a;box-shadow:0 0 8px #35e07a}
+  .broker-logo{width:84px;height:84px;background:#fff;border-radius:12px;margin:4px auto 14px;display:flex;align-items:center;justify-content:center}
+  .eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;padding:6px;font-size:16px}
+  .status-line{text-align:center;font-size:11px;color:#0a3330;margin:12px 0 6px;font-weight:600}
+  .link-line{text-align:center;margin:16px 0;font-size:13px;text-decoration:underline;font-weight:600}
+
+  /* ---------- bottom nav ---------- */
+  .bottom-nav{display:flex;background:var(--bg2);border-top:1px solid rgba(43,217,255,.18)}
+  .bottom-nav button{flex:1;background:none;border:none;color:var(--cyan);padding:10px 0 12px;font-size:11px;font-weight:700;letter-spacing:.6px}
+  .bottom-nav button .ni{display:block;font-size:19px;margin-bottom:2px}
+  .bottom-nav button.on{color:#fff}
+  .teal-screen .bottom-nav{background:#04191b}
+  .safe-b{padding-bottom:var(--safe-b)}
+
+  /* ---------- HOME ---------- */
+  .hero{position:relative;height:250px;flex-shrink:0;overflow:hidden;background:radial-gradient(circle at 70% 30%,#124a3a 0%,#0a1b2b 55%,#060a14 100%)}
+  .hero img.hero-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .hero-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,10,20,.15) 0%,rgba(6,10,20,.55) 60%,rgba(10,15,30,1) 100%)}
+  .hero-text{position:absolute;left:18px;right:18px;bottom:16px}
+  .hero-text h1{margin:0;font-size:30px;letter-spacing:2px;font-weight:800;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+  .hero-text p{margin:3px 0 0;font-size:12px;color:#bfe3ee;letter-spacing:.6px}
+  .gear{position:absolute;top:calc(12px + var(--safe-t));right:14px;width:36px;height:36px;border-radius:50%;background:rgba(6,10,20,.55);border:1px solid var(--line);color:#dffaff;font-size:17px;display:flex;align-items:center;justify-content:center}
+  .home-body{padding:6px 16px 90px}
+  .welcome{margin:2px 2px 8px}
+  .welcome div{font-size:15px;color:var(--muted)}
+  .welcome b{font-size:19px;color:var(--text)}
+  .welcome span{display:block;font-size:12.5px;color:var(--green);margin-top:3px}
+  .sec-title{font-size:16px;font-weight:700;margin:14px 2px 10px}
+  .actions{display:flex;gap:10px}
+  .act{flex:1;border:none;border-radius:12px;padding:14px 4px;background:linear-gradient(180deg,#0f4a5a,#0a3340);border:1px solid var(--line);color:#dffaff;font-size:12px;font-weight:700;letter-spacing:.5px;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .act .ai{font-size:18px}
+  .act.run{background:linear-gradient(180deg,#b6433b,#862d27);border-color:#ef5b52}
+  .ea-row{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;width:100%;text-align:left;color:inherit}
+  .ea-icon{width:54px;height:54px;border-radius:14px;flex-shrink:0;background:radial-gradient(circle at 30% 30%,#123027,#01100c);border:1px solid #1f9c5a;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .ea-icon img{width:100%;height:100%;object-fit:cover}
+  .ea-icon.ai{background:radial-gradient(circle at 30% 30%,#0d3a4d,#04141d);border-color:var(--cyan-dim);font-size:26px}
+  .ea-row .t{font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px}
+  .ea-row .s{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.35}
+  .ea-row .m{font-size:11px;color:var(--cyan);margin-top:5px}
+  .ea-row .chev{margin-left:auto;color:var(--cyan);font-size:20px}
+  .new{background:var(--cyan);color:#04212a;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:9px;letter-spacing:.6px}
+  .status-strip{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;font-size:12.5px;color:#cfe7ef;margin-bottom:10px}
+  .bot-state{background:var(--card);border-radius:10px;padding:12px;text-align:center;font-size:13px;font-weight:700;color:#8a9c99;display:flex;align-items:center;justify-content:center;gap:8px}
+  .bot-state .b-dot{width:9px;height:9px;border-radius:50%;background:#556}
+  .bot-state.running{color:var(--green)} .bot-state.running .b-dot{background:var(--green);box-shadow:0 0 8px var(--green)}
+
+  /* ---------- scanner choose / setup ---------- */
+  .big-opt{display:flex;gap:14px;align-items:center;width:100%;text-align:left;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:14px}
+  .big-opt .bi{width:52px;height:52px;border-radius:14px;background:#0b2a38;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+  .big-opt .t{font-weight:700;font-size:16px}
+  .big-opt .s{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.4}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;text-align:left;color:inherit;width:100%}
+  .tile .v{font-size:16px;font-weight:700;color:var(--cyan);margin-top:2px}
+  .tile .h{font-size:11px;color:var(--muted);margin-top:2px}
+  .tile input{width:100%;background:transparent;border:none;color:var(--cyan);font-size:16px;font-weight:700;padding:0;outline:none;text-transform:uppercase}
+  .tile input::placeholder{color:#35607a;text-transform:none;font-weight:600}
+  .seg{display:flex;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:12px}
+  .seg button{flex:1;padding:10px;border:none;border-radius:10px;background:transparent;color:var(--muted);font-weight:700;font-size:12.5px}
+  .seg button.on{background:var(--cyan);color:#04212a}
+  .dropzone{height:230px;border:1px dashed var(--line);border-radius:16px;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-size:13px;margin:12px 0;overflow:hidden;position:relative}
+  .dropzone img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#05080f}
+  .dropzone .big{font-size:40px}
+  .src-btn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--cyan);font-weight:700;letter-spacing:1.2px;font-size:12px}
+  .src-btn span{font-size:24px}
+
+  /* ---------- strategy picker ---------- */
+  .strat{display:flex;align-items:center;gap:14px;width:100%;text-align:left;color:inherit;background:var(--card);border:1px solid rgba(43,217,255,.14);border-radius:18px;padding:14px;margin-bottom:12px}
+  .strat .si{width:52px;height:52px;border-radius:50%;background:#0b2a38;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+  .strat .t{font-weight:700;font-size:16px}
+  .strat .s{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .strat .radio{margin-left:auto;width:28px;height:28px;border-radius:50%;border:2px solid #2a3a46;display:flex;align-items:center;justify-content:center;font-size:14px;color:#04212a;flex-shrink:0}
+  .strat.sel{background:#0f2f3f;border-color:var(--cyan)}
+  .strat.sel .radio{background:var(--cyan);border-color:var(--cyan)}
+  .strat.locked{opacity:.6}
+  .strat.locked .radio{border:none;font-size:18px;color:var(--amber)}
+
+  /* ---------- scanning ---------- */
+  .prog{height:7px;border-radius:5px;background:#16303f;overflow:hidden;margin:12px 0 18px}
+  .prog > i{display:block;height:100%;width:0;background:var(--cyan);transition:width .5s ease}
+  .step{display:flex;align-items:center;gap:12px;padding:9px 0;color:#7fa0b3;font-size:14px}
+  .step .dot{width:22px;height:22px;border-radius:50%;border:2px solid #2a4658;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+  .step.done{color:var(--text)} .step.done .dot{background:var(--green);border-color:var(--green);color:#03210f}
+  .step.now{color:var(--text)} .step.now .dot{border-top-color:var(--cyan);animation:spin 0.9s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ---------- result ---------- */
+  .bias-head{text-align:center;padding:6px 0 2px}
+  .bias-head .b{font-size:30px;font-weight:800;letter-spacing:2px}
+  .bias-head .sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .conf{height:7px;border-radius:5px;background:#16303f;overflow:hidden;margin:10px 0 4px}
+  .conf i{display:block;height:100%}
+  .quote{font-size:14px;line-height:1.5;font-style:italic;color:#d6e8ef}
+  .kl{display:flex;gap:12px}
+  .kl .card{flex:1;margin-bottom:0}
+  .kl .n{font-size:18px;font-weight:800;margin-top:4px}
+  .setup-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(43,217,255,.10);font-size:14px}
+  .setup-row:last-of-type{border-bottom:none}
+  .setup-row .v{font-weight:800;font-size:17px;font-variant-numeric:tabular-nums}
+  .rr{display:inline-block;margin-top:10px;padding:5px 14px;border-radius:16px;border:1px solid var(--line);background:#0b2a38;color:var(--cyan);font-size:12.5px;font-weight:700}
+
+  /* ---------- chart screen ---------- */
+  .chart-wrap{background:#060b14;border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:12px}
+  canvas#tradeCanvas{display:block;width:100%;height:320px}
+  .ticket{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(43,217,255,.10);font-size:13.5px}
+  .ticket:last-child{border-bottom:none}
+
+  /* ---------- overlays ---------- */
+  .modal-back{position:fixed;inset:0;background:rgba(2,6,12,.72);display:none;align-items:center;justify-content:center;z-index:80;padding:20px}
+  .modal-back.show{display:flex}
+  .modal{background:#1c2a36;border:1px solid var(--line);border-radius:16px;width:100%;max-width:420px;padding:20px;max-height:90vh;overflow-y:auto}
+  .modal h3{margin:0 0 14px;font-size:17px}
+  .modal label{display:block;font-size:12px;color:var(--muted);margin:12px 0 6px}
+  .modal input{width:100%;background:#0f2130;border:1px solid var(--line);color:#fff;border-radius:10px;padding:12px;font-size:16px;outline:none}
+  .modal .btns{display:flex;justify-content:flex-end;gap:22px;margin-top:20px}
+  .modal .btns button{background:none;border:none;color:var(--cyan);font-weight:700;font-size:14px;letter-spacing:.5px;padding:6px 4px}
+  .modal .btns button.muted-btn{color:#9fb6c2}
+  .kv{font-size:14.5px;line-height:1.75;font-variant-numeric:tabular-nums}
+  .kv b{display:inline-block;min-width:98px;color:#cfe0e8;font-weight:600}
+  .toast{position:fixed;left:18px;right:18px;bottom:calc(96px + var(--safe-b));background:#12303a;border:1px solid #1f9c5a;color:var(--mint);padding:12px 14px;border-radius:12px;font-size:13px;text-align:center;display:none;z-index:120}
+  .toast.show{display:block} .toast.err{border-color:var(--red);color:#ffd7d3;background:#2b1618}
+
+  /* ---------- mic + assistant ---------- */
+  .mic{position:fixed;right:16px;bottom:calc(92px + var(--safe-b));width:54px;height:54px;border-radius:50%;border:1px solid var(--cyan);background:linear-gradient(180deg,#0f5a6c,#0a3a48);color:#fff;font-size:23px;display:none;align-items:center;justify-content:center;z-index:70;box-shadow:0 4px 18px rgba(0,0,0,.45)}
+  .mic.show{display:flex}
+  body[data-nav="0"] .mic{bottom:calc(22px + var(--safe-b))}
+  body[data-nav="0"] .chat-fab{bottom:calc(84px + var(--safe-b))}
+  body[data-nav="0"] .listen-pill{bottom:calc(28px + var(--safe-b))}
+  body[data-nav="0"] .toast{bottom:calc(90px + var(--safe-b))}
+  .chat-fab{position:fixed;right:24px;bottom:calc(154px + var(--safe-b));width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--cyan);font-size:16px;display:none;align-items:center;justify-content:center;z-index:70}
+  .chat-fab.show{display:flex}
+  .mic.listening{background:linear-gradient(180deg,#d6453b,#9e2c25);border-color:#ff8a80;animation:pulse 1.2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,91,82,.55)}50%{box-shadow:0 0 0 14px rgba(239,91,82,0)}}
+  .sheet-back{position:fixed;inset:0;background:rgba(2,6,12,.55);display:none;z-index:90}
+  .sheet-back.show{display:block}
+  .sheet{position:absolute;left:0;right:0;bottom:0;height:72vh;height:72dvh;background:var(--bg);border-top:1px solid var(--cyan-dim);border-radius:20px 20px 0 0;display:flex;flex-direction:column;padding-bottom:var(--safe-b)}
+  .sheet-h{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(43,217,255,.12)}
+  .sheet-h b{font-size:15px;letter-spacing:.8px;color:var(--cyan)}
+  .sheet-h .sp{margin-left:auto}
+  .icon-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--cyan);font-size:16px}
+  .icon-btn.off{color:#56707f}
+  .msgs{flex:1;overflow-y:auto;padding:14px 16px}
+  .msg{max-width:86%;padding:10px 13px;border-radius:16px;margin-bottom:10px;font-size:14px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+  .msg.u{margin-left:auto;background:#0f4a5a;border-bottom-right-radius:4px}
+  .msg.a{background:var(--card);border:1px solid var(--line);border-bottom-left-radius:4px}
+  .msg.typing{color:var(--muted)}
+  .sugg{padding:0 16px 8px}
+  .ask-row{display:flex;gap:8px;padding:8px 14px 12px;align-items:center}
+  .ask-row input{flex:1;background:var(--card);border:1px solid var(--line);color:#fff;border-radius:22px;padding:12px 16px;font-size:16px;outline:none}
+  .ask-row .icon-btn{width:44px;height:44px}
+  .listen-pill{position:fixed;left:16px;right:84px;bottom:calc(98px + var(--safe-b));background:#2b1618;border:1px solid var(--red);color:#ffd7d3;border-radius:16px;padding:10px 14px;font-size:13px;display:none;z-index:75}
+  .listen-pill.show{display:block}
+  @media (prefers-reduced-motion:reduce){.step.now .dot,.mic.listening{animation:none}.prog>i{transition:none}}
+</style>
+</head>
+<body>
+
+<!-- ============ ONBOARD ============ -->
+<div class="screen active" id="onboard" data-mic="0">
+  <div class="back-circle">‹</div>
+  <div class="scroll">
+    <div class="logo-ring"><div class="logo-sq"><img src="logo.png" alt="" onerror="this.replaceWith(logoFallback())"></div></div>
+    <h1 class="serif">LOGIN</h1>
+    <div class="rule"></div>
+    <div class="field"><div class="ic">#</div><div class="fld-text"><label for="mentorId">Mentor ID</label><input id="mentorId" inputmode="numeric" placeholder="Defaults to 115"></div></div>
+    <div class="field"><div class="ic">🎁</div><div class="fld-text"><label for="referralCode">Referral code <span class="tag">OPTIONAL</span></label><input id="referralCode" placeholder="EAC-XXXX"></div></div>
+    <div class="field"><div class="ic">✉</div><div class="fld-text"><label for="email">Email</label><input id="email" type="email" placeholder="you@example.com" autocapitalize="off"></div></div>
+    <p class="hint">Your email is the only required field.</p>
+    <button class="proceed" id="proceedBtn" style="width:calc(100% - 40px)">PROCEED</button>
+    <div style="height:30px"></div>
+  </div>
+</div>
+
+<!-- ============ LICENSE ============ -->
+<div class="screen teal-screen" id="licenseScreen" data-mic="0">
+  <div class="scroll" style="padding-top:56px">
+    <h2 class="center" style="font-size:24px">License Key</h2>
+    <p style="text-align:center;font-size:13.5px;margin:-6px 22px 22px">Please enter the license key you were issued by your mentor.</p>
+    <div class="banner" id="mentorBanner" style="display:none">👑 Lifetime access is active on this phone</div>
+    <div class="tfield"><input id="licenseKeyInput" placeholder="Enter the key here" autocapitalize="characters" autocomplete="off"></div>
+    <button class="black-btn" id="authenticateBtn" style="width:calc(100% - 36px)">Authenticate</button>
+    <p class="link-line" id="viewTypesLink">View License Types</p>
+  </div>
+  <div class="bottom-nav safe-b"><button data-go="home"><span class="ni">⌂</span>HOME</button><button data-go="brokerLogin"><span class="ni">👤</span>METATRADER</button></div>
+</div>
+
+<!-- ============ ADD EA (no license) ============ -->
+<div class="screen" id="addEA" data-mic="0">
+  <div class="pad" style="padding-top:22px"><div class="label" style="letter-spacing:2px;font-size:12px;color:#c8d3d1">ADD A NEW EA</div>
+    <div style="color:var(--red);font-weight:700;font-size:12px;letter-spacing:.5px;margin-top:6px">LICENSE: NOT ACTIVATED</div></div>
+  <div class="grow"></div>
+  <div style="padding:0 20px 20px"><button class="btn" id="goLicenseBtn">ENTER LICENSE KEY</button></div>
+  <div class="bottom-nav safe-b"><button data-go="home"><span class="ni">⌂</span>HOME</button><button data-go="brokerLogin"><span class="ni">👤</span>METATRADER</button></div>
+</div>
+
+<!-- ============ BROKER LOGIN ============ -->
+<div class="screen teal-screen" id="brokerLogin" data-mic="0">
+  <div class="scroll">
+    <div class="broker-tabs">
+      <div class="broker-tab active" data-broker="MT5">MT5</div>
+      <div class="broker-tab" data-broker="MT4">MT4</div>
+      <div class="broker-tab" data-broker="XM" style="background:#e07a1f">OPEN XM</div>
+    </div>
+    <div class="live-dot" id="brokerDot"></div>
+    <div class="broker-logo"><svg width="46" height="46" viewBox="0 0 100 100" aria-hidden="true"><circle cx="35" cy="60" r="24" fill="#3aa757"/><circle cx="60" cy="55" r="24" fill="#4a90d9"/><circle cx="48" cy="35" r="24" fill="#e8b923"/><circle cx="50" cy="50" r="17" fill="#fff"/><text x="50" y="56" font-size="18" text-anchor="middle" fill="#e07a1f" font-weight="bold">5</text></svg></div>
+    <h2 class="center">MT5 LOGIN DETAILS</h2>
+    <div class="tfield"><input id="mtLogin" inputmode="numeric" placeholder="Login" autocomplete="off"></div>
+    <div class="tfield"><input id="mtPassword" type="password" placeholder="Password" autocomplete="off"><button class="eye" id="pwToggle" aria-label="Show password">👁</button></div>
+    <div class="tfield"><input id="mtServer" placeholder="Server" autocapitalize="off" autocomplete="off"></div>
+    <button class="black-btn" id="linkMt5Btn" style="width:calc(100% - 36px)">LINK MT5 ACCOUNT</button>
+    <div class="status-line" id="brokerStatusLine">Not linked yet</div>
+  </div>
+  <div class="bottom-nav safe-b"><button data-go="home"><span class="ni">⌂</span>HOME</button><button data-go="brokerLogin" class="on"><span class="ni">👤</span>METATRADER</button></div>
+</div>
+
+<!-- ============ HOME ============ -->
+<div class="screen" id="home" data-mic="1">
+  <div class="scroll">
+    <div class="hero">
+      <img class="hero-img" src="hero.jpg" alt="" onerror="this.remove()">
+      <div class="hero-shade"></div>
+      <button class="gear" id="settingsGear" aria-label="Settings">⚙</button>
+      <div class="hero-text"><h1>VIPER EA</h1><p>Viper Scalping EA · AI trading assistant</p></div>
+    </div>
+    <div class="home-body">
+      <div class="welcome"><div>Welcome <b id="studentName">Student</b></div><span id="homeLicenseLine">License: —</span></div>
+
+      <div class="sec-title">Actions</div>
+      <div class="actions">
+        <button class="act" id="startBtn"><span class="ai" id="startIcon">▶</span><span id="startLabel">START</span></button>
+        <button class="act" id="symbolsBtn"><span class="ai">📈</span>SYMBOLS</button>
+        <button class="act" id="removeBtn"><span class="ai">🗑</span>REMOVE</button>
+      </div>
+
+      <div class="sec-title">Select EA to Start</div>
+      <button class="ea-row" id="robotRow">
+        <div class="ea-icon"><img src="logo.png" alt="" onerror="this.replaceWith(robotFallback())"></div>
+        <div><div class="t">VIPER SCALPING ROBOT</div><div class="s">Mode: <span id="modeLabel">NORMAL</span></div></div>
+      </button>
+      <button class="ea-row" id="openScanner">
+        <div class="ea-icon ai">🤖</div>
+        <div><div class="t">AI Chart Scanner <span class="new">NEW</span></div>
+          <div class="s">Scan any chart, get an instant AI trend analysis</div>
+          <div class="m" id="scansLeft">✦ Tap to start</div></div>
+        <div class="chev">›</div>
+      </button>
+
+      <div class="status-strip" id="statusStrip">Viper EA | — | YOUR Lot: —</div>
+      <div class="bot-state" id="botState"><span class="b-dot"></span><span id="botStateLabel">Bot Stopped</span></div>
+    </div>
+  </div>
+  <div class="bottom-nav safe-b"><button data-go="home" class="on"><span class="ni">⌂</span>HOME</button><button data-go="brokerLogin"><span class="ni">👤</span>METATRADER</button></div>
+</div>
+
+<!-- ============ SCANNER: choose ============ -->
+<div class="screen" id="scanChoose" data-mic="1">
+  <div class="topbar"><button class="back" data-back aria-label="Back">‹</button><h2>AI CHART SCANNER</h2><span class="pill" id="scanPill1">—</span></div>
+  <div class="scroll pad">
+    <p class="muted" style="font-size:13px;margin:2px 2px 16px">Choose how you want to read the market.</p>
+    <button class="big-opt" id="optLive"><div class="bi">📊</div><div><div class="t">Live Scanner</div><div class="s">Upload a chart screenshot or read live MT5 candles, pick a strategy and get a trade setup.</div></div></button>
+    <button class="big-opt" id="optNews"><div class="bi">📰</div><div><div class="t">News Predictor</div><div class="s">An AI outlook for a symbol based on market news and macro events.</div></div></button>
+    <p class="disclaimer">AI signals are educational. Always verify before trading.</p>
+  </div>
+</div>
+
+<!-- ============ SCANNER: setup ============ -->
+<div class="screen" id="scanSetup" data-mic="1">
+  <div class="topbar"><button class="back" data-back aria-label="Back">‹</button><h2>LIVE SCANNER</h2><span class="pill" id="scanPill2">—</span></div>
+  <div class="scroll pad">
+    <div class="row" style="margin-bottom:12px">
+      <div class="tile"><div class="label">SYMBOL</div><input id="scanSymbol" placeholder="e.g. XAUUSD" autocapitalize="characters" autocomplete="off" autocorrect="off"><div class="h">Tap to type</div></div>
+      <button class="tile" id="pickStrategy"><div class="label">STRATEGY</div><div class="v" id="stratLabel">—</div><div class="h">Tap to change</div></button>
+    </div>
+    <div class="seg" id="srcSeg"><button data-src="upload" class="on">Upload screenshot</button><button data-src="live">Live MT5 candles</button></div>
+
+    <div id="uploadBox">
+      <div class="dropzone" id="dropzone"><div class="big">📊</div><div>No chart selected</div><div style="font-size:12px">Take a photo or pick from gallery</div></div>
+      <div class="row"><button class="src-btn" id="camBtn"><span>📷</span>CAMERA</button><button class="src-btn" id="galBtn"><span>🖼</span>GALLERY</button></div>
+      <input type="file" id="fileCam" accept="image/*" capture="environment" hidden>
+      <input type="file" id="fileGal" accept="image/*" hidden>
+    </div>
+    <div id="liveBox" style="display:none">
+      <div class="card"><div class="label">TIMEFRAME</div><div id="tfChips" style="margin-top:8px"></div>
+        <div class="muted" style="font-size:12px;margin-top:6px;line-height:1.4">The bridge reads the latest candles of this symbol straight from MetaTrader. No screenshot needed.</div></div>
+    </div>
+    <button class="btn" id="scanBtn" style="margin-top:14px" disabled>SELECT A CHART FIRST</button>
+    <p class="disclaimer">AI signals are educational. Always verify before trading.</p>
+  </div>
+</div>
+
+<!-- ============ SCANNER: strategies ============ -->
+<div class="screen" id="strategyPick" data-mic="0">
+  <div class="topbar"><button class="back" data-back aria-label="Back">‹</button><h2>CHOOSE STRATEGY</h2></div>
+  <div class="scroll pad">
+    <p class="muted" style="font-size:13px;margin:2px 2px 14px">Each engine reads the chart differently.</p>
+    <div id="stratList"></div>
+  </div>
+</div>
+
+<!-- ============ SCANNER: working ============ -->
+<div class="screen" id="scanning" data-mic="0">
+  <div class="topbar"><button class="back" id="scanningBack" aria-label="Back">‹</button><h2>AI ANALYSIS</h2></div>
+  <div class="scroll pad">
+    <div class="card" id="scanProgCard">
+      <div style="display:flex;justify-content:space-between;align-items:center"><b>✦ AI Analysis</b><span class="muted" style="font-size:12px" id="scanSub">Working…</span></div>
+      <div class="prog"><i id="progBar"></i></div>
+      <div id="stepList"></div>
+    </div>
+    <div id="scanError" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ============ SCANNER: result ============ -->
+<div class="screen" id="scanResult" data-mic="1">
+  <div class="topbar"><button class="back" data-back aria-label="Back">‹</button><h2>SCAN RESULT</h2><span class="pill" id="scanPill3">—</span></div>
+  <div class="scroll pad" id="resultBody"></div>
+</div>
+
+<!-- ============ NEWS ============ -->
+<div class="screen" id="newsSetup" data-mic="1">
+  <div class="topbar"><button class="back" data-back aria-label="Back">‹</button><h2>NEWS PREDICTOR</h2><span class="pill" id="scanPill4">—</span></div>
+  <div class="scroll pad">
+    <div class="tile" style="margin-bottom:14px"><div class="label">SYMBOL</div><input id="newsSymbol" placeholder="e.g. XAUUSD" autocapitalize="characters" autocomplete="off" autocorrect="off"><div class="h">Tap to type</div></div>
+    <button class="btn" id="newsBtn">PREDICT</button>
+    <div id="newsBody" style="margin-top:16px"></div>
+    <p class="disclaimer">AI outlooks are educational. Always verify before trading.</p>
+  </div>
+</div>
+
+<!-- ============ TRADE CHART ============ -->
+<div class="screen" id="tradeChart" data-mic="1">
+  <div class="topbar"><button class="back" id="chartBack" aria-label="Back">‹</button><h2 id="chartTitle">TRADE</h2><span class="pill" id="chartPrice">—</span></div>
+  <div class="scroll pad">
+    <div class="card" style="border-color:rgba(53,224,122,.5)"><b id="execHead" style="color:var(--green)">✓ Trades placed</b><div class="muted" style="font-size:12.5px;margin-top:4px" id="execSub"></div></div>
+    <div id="tfChips2" style="margin-bottom:8px"></div>
+    <div class="chart-wrap"><canvas id="tradeCanvas"></canvas></div>
+    <div class="card"><div class="label" style="margin-bottom:8px">YOUR TRADES</div><div id="ticketList"></div>
+      <div class="muted" style="font-size:12px;margin-top:10px;line-height:1.45">Each trade has its stop loss and take profit set on your MT5 account. The lines on the chart show where they are.</div></div>
+    <button class="btn ghost" id="chartHome">BACK TO HOME</button>
+  </div>
+</div>
+
+<!-- ============ OVERLAYS ============ -->
+<div class="modal-back" id="settingsModal"><div class="modal">
+  <h3>Settings</h3>
+  <label for="bridgeUrlInput">Bridge server URL</label><input id="bridgeUrlInput" placeholder="https://your-tunnel.trycloudflare.com" autocapitalize="off" autocorrect="off">
+  <label for="symbolsInput">Robot symbols (comma-separated)</label><input id="symbolsInput" placeholder="XAUUSD, US30">
+  <label for="lotSizeInput">Lot size</label><input id="lotSizeInput" type="number" step="0.01" inputmode="decimal">
+  <div class="btns"><button class="muted-btn" id="settingsClose">CLOSE</button><button id="settingsSave">SAVE</button></div>
+</div></div>
+
+<div class="modal-back" id="tradeModal"><div class="modal">
+  <h3 id="tradeModalTitle">Trade Settings</h3>
+  <label for="lotInput">Lot Size (per position)</label><input id="lotInput" type="number" step="0.01" min="0.01" inputmode="decimal">
+  <div id="lotChips" style="margin-top:10px"></div>
+  <label for="numInput" id="numLabel">Number of Trades (1 - 20)</label><input id="numInput" type="number" min="1" max="20" step="1" inputmode="numeric">
+  <div class="btns"><button class="muted-btn" id="tradeCancel">CANCEL</button><button id="tradeContinue">CONTINUE</button></div>
+</div></div>
+
+<div class="modal-back" id="confirmModal"><div class="modal">
+  <h3>Confirm AI Trade</h3>
+  <div class="kv" id="confirmBody"></div>
+  <p class="muted" style="font-size:13px;line-height:1.45;margin:12px 0 0" id="confirmNote"></p>
+  <div id="confirmErr" class="err-box" style="display:none;margin-top:12px"></div>
+  <div class="btns"><button class="muted-btn" id="confirmCancel">CANCEL</button><button id="confirmGo">EXECUTE</button></div>
+</div></div>
+
+<button class="chat-fab" id="chatBtn" aria-label="Type a question to Viper">💬</button>
+<button class="mic" id="micBtn" aria-label="Ask Viper by voice">🎙</button>
+<div class="listen-pill" id="listenPill">Listening…</div>
+
+<div class="sheet-back" id="sheetBack"><div class="sheet" role="dialog" aria-label="Viper assistant">
+  <div class="sheet-h"><b>🎙 VIPER ASSISTANT</b><span class="sp"></span><button class="icon-btn" id="voiceToggle" aria-label="Spoken replies on or off">🔊</button><button class="icon-btn" id="sheetClose" aria-label="Close">✕</button></div>
+  <div class="msgs" id="msgs"></div>
+  <div class="sugg" id="sugg"></div>
+  <div class="ask-row"><input id="askInput" placeholder="Ask about your scan or the robot…" autocomplete="off"><button class="icon-btn" id="askMic" aria-label="Speak">🎙</button><button class="icon-btn" id="askSend" aria-label="Send">➤</button></div>
+</div></div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* =====================================================================
+   SET THIS ONCE: your Cloudflare Tunnel (or other HTTPS) bridge address.
+   Students then never have to type it. Leave "" to type it in Settings.
+   ===================================================================== */
+const DEFAULT_BRIDGE_URL = "";
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = {
+  get(k, d=''){ try{ const v = localStorage.getItem('viper_'+k); return v == null ? d : v; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('viper_'+k, v); }catch(e){} }
+};
+
+const STRATEGIES = [
+  {key:'price_action',       icon:'🎯', name:'Price Action',          desc:'Swing levels + candle signals', basic:true},
+  {key:'scalping',           icon:'⚡', name:'Scalping',              desc:'M1-M15 quick moves, tight SL/TP'},
+  {key:'swing',              icon:'🌊', name:'Swing Trading',         desc:'H4-D1 setups, wide SL, big RR'},
+  {key:'breakout',           icon:'💥', name:'Breakout',              desc:'Trade range breaks + retests'},
+  {key:'trend_following',    icon:'📈', name:'Trend Following',       desc:'Ride trends on pullbacks', basic:true},
+  {key:'support_resistance', icon:'🧱', name:'Support & Resistance',  desc:'Trade key horizontal levels', basic:true},
+  {key:'smart_money',        icon:'🧠', name:'Smart Money (ICT)',     desc:'Order blocks, FVG, liquidity'},
+  {key:'supply_demand',      icon:'⚖️', name:'Supply & Demand',       desc:'Fresh institutional zones'}
+];
+const FULL_LICENSES = ['6MONTHS','1YEAR','LIFETIME'];
+const TIMEFRAMES = ['M1','M5','M15','M30','H1','H4','D1'];
+const LOT_CHIPS = ['0.01','0.05','0.1','0.25','0.5'];
+const MAX_TRADES = 20, MAX_LOT = 1;
+
+window.logoFallback = function(){
+  const d = document.createElement('div'); d.innerHTML = '<svg width="64" height="64" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 8 C28 24 18 46 24 74 C34 62 44 64 50 80 C56 64 66 62 76 74 C82 46 72 24 50 8 Z" fill="none" stroke="#22c05a" stroke-width="5" stroke-linejoin="round"/><circle cx="41" cy="44" r="4" fill="#22c05a"/><circle cx="59" cy="44" r="4" fill="#22c05a"/></svg>'; return d.firstChild;
+};
+window.robotFallback = function(){
+  const d = document.createElement('div'); d.innerHTML = '<svg width="34" height="34" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 10 C30 25 20 45 25 70 C35 60 45 62 50 75 C55 62 65 60 75 70 C80 45 70 25 50 10 Z" fill="none" stroke="#35e07a" stroke-width="5"/><circle cx="42" cy="42" r="3.5" fill="#35e07a"/><circle cx="58" cy="42" r="3.5" fill="#35e07a"/></svg>'; return d.firstChild;
+};
+
+/* ---------------- device + state ---------------- */
+let deviceId = store.get('device_id');
+if(!deviceId){ deviceId = 'dev-' + Math.random().toString(36).slice(2,10) + Date.now().toString(36); store.set('device_id', deviceId); }
+if(!store.get('bridge_url') && DEFAULT_BRIDGE_URL) store.set('bridge_url', DEFAULT_BRIDGE_URL);
+
+const S = {
+  strategy: store.get('strategy', 'trend_following'),
+  source: 'upload', tf: 'M15',
+  imageB64: '', imageMime: 'image/jpeg', imageUrl: '',
+  lastScan: null, lastExec: null, execId: '', scanning: false
+};
+function licInfo(){ try{ return JSON.parse(store.get('license_info','{}')) || {}; }catch(e){ return {}; } }
+function hasFullAccess(){ return FULL_LICENSES.indexOf((licInfo().duration_type||'').toUpperCase()) >= 0; }
+function strategyAllowed(s){ return hasFullAccess() || !!s.basic; }
+function authBody(){ return {license_key: store.get('license_key'), device_id: deviceId}; }
+function bridgeBase(){ let u = store.get('bridge_url').trim(); if(u.endsWith('/')) u = u.slice(0,-1); return u; }
+function newId(){ try{ return crypto.randomUUID(); }catch(e){ return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,10); } }
+function fmt(n, d){ if(n == null || isNaN(n)) return '—'; const x = Number(n); const dec = d != null ? d : (Math.abs(x) >= 1000 ? 2 : Math.abs(x) >= 10 ? 3 : 5); return x.toFixed(dec); }
+
+/* ---------------- toast ---------------- */
+let toastT;
+function toast(msg, isErr){ const t = $('toast'); t.textContent = msg; t.className = 'toast show' + (isErr ? ' err' : ''); clearTimeout(toastT); toastT = setTimeout(()=> t.classList.remove('show'), 3600); }
+
+/* ---------------- navigation (works with the phone back button) ---------------- */
+const stack = [];
+const hooks = {};
+function current(){ return stack[stack.length-1]; }
+function show(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = $(id); el.classList.add('active');
+  document.body.dataset.nav = el.querySelector('.bottom-nav') ? '1' : '0';
+  $('micBtn').classList.toggle('show', el.dataset.mic === '1'); $('chatBtn').classList.toggle('show', el.dataset.mic === '1');
+  $('listenPill').classList.remove('show');
+  if(hooks[id] && hooks[id].enter) hooks[id].enter();
+}
+function go(id, opts){
+  opts = opts || {};
+  const prev = current();
+  if(prev === id && !opts.replace && !opts.reset) return;
+  if(prev && hooks[prev] && hooks[prev].leave) hooks[prev].leave();
+  if(opts.replace && stack.length) stack[stack.length-1] = id; else if(opts.reset){ stack.length = 0; stack.push(id); } else stack.push(id);
+  show(id);
+}
+function back(){
+  if(stack.length <= 1){ return; }
+  const prev = current(); if(hooks[prev] && hooks[prev].leave) hooks[prev].leave();
+  stack.pop(); show(current());
+}
+// One spare history entry lets the phone's back button step back inside the app; on Home it leaves as normal.
+try{ history.replaceState({v:1}, ''); history.pushState({v:1}, ''); }catch(e){}
+window.addEventListener('popstate', () => { if(stack.length > 1){ back(); try{ history.pushState({v:1}, ''); }catch(e){} } });
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-back]'); if(b){ back(); return; }
+  const g = e.target.closest('[data-go]'); if(g){ const id = g.dataset.go; if(id === 'home') goHome(); else go(id); }
+});
+function goHome(){ if(current() === 'home') return; const prev = current(); if(hooks[prev] && hooks[prev].leave) hooks[prev].leave(); stack.length = 0; stack.push('home'); show('home'); }
+
+/* ---------------- bridge API ---------------- */
+async function api(path, body, opts){
+  opts = opts || {};
+  const base = bridgeBase();
+  if(!base) throw new Error('Set your bridge server URL first (gear icon on the Home screen).');
+  const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), opts.timeout || 90000);
+  try{
+    const res = await fetch(base + path, {method: body ? 'POST' : 'GET', headers: body ? {'Content-Type':'application/json'} : undefined, body: body ? JSON.stringify(body) : undefined, signal: ctl.signal});
+    let data; try{ data = await res.json(); }catch(e){ data = {success:false, message:'Unreadable reply from the bridge. Check the server URL.'}; }
+    if(res.status === 403 && data && data.license_required){ store.set('license_valid','0'); }
+    return {ok: res.ok, status: res.status, data};
+  }catch(e){
+    if(e && e.name === 'AbortError') throw new Error('The bridge took too long to answer. Try again.');
+    throw new Error('Cannot reach the bridge at ' + base.replace(/^https?:\/\//i, '') + '. Check that the bridge is running and that this is its https tunnel address.');
+  }finally{ clearTimeout(timer); }
+}
+
+/* ---------------- onboarding ---------------- */
+$('mentorId').value = store.get('mentor_id'); $('referralCode').value = store.get('referral_code'); $('email').value = store.get('email');
+$('proceedBtn').addEventListener('click', () => {
+  const email = $('email').value.trim();
+  if(!/^\S+@\S+\.\S+$/.test(email)){ toast('Enter a valid email', true); return; }
+  store.set('mentor_id', $('mentorId').value.trim() || '115'); store.set('referral_code', $('referralCode').value.trim()); store.set('email', email);
+  afterOnboard();
+});
+function afterOnboard(){ if(store.get('license_key') && store.get('license_valid') === '1') go('home', {reset:true}); else go('licenseScreen', {reset:true}); }
+
+/* ---------------- license ---------------- */
+$('licenseKeyInput').value = store.get('license_key');
+$('authenticateBtn').addEventListener('click', async () => {
+  const key = $('licenseKeyInput').value.trim(); if(!key){ toast('Enter a license key', true); return; }
+  const b = $('authenticateBtn'); b.disabled = true; b.textContent = 'Checking…';
+  try{
+    const {ok, data} = await api('/validate_license', {license_key:key, device_id:deviceId});
+    if(ok && data.success){
+      store.set('license_key', key); store.set('license_valid','1'); store.set('license_info', JSON.stringify(data.license_info || {}));
+      toast('License activated'); setTimeout(() => go('home', {reset:true}), 450);
+    }else{ store.set('license_valid','0'); toast(data.message || 'License rejected', true); }
+  }catch(e){ toast(e.message, true); }
+  b.disabled = false; b.textContent = 'Authenticate';
+});
+$('viewTypesLink').addEventListener('click', () => toast('1, 3, 7, 30 days · 3 months · 6 months · 1 year · Lifetime. 6 months and up unlock every AI strategy.'));
+hooks.licenseScreen = {enter: () => { $('mentorBanner').style.display = (store.get('license_valid') === '1' && (licInfo().duration_type || '').toUpperCase() === 'LIFETIME') ? '' : 'none'; }};
+$('goLicenseBtn').addEventListener('click', () => go('licenseScreen'));
+
+/* ---------------- broker login ---------------- */
+document.querySelectorAll('.broker-tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.broker-tab').forEach(x => x.classList.remove('active')); t.classList.add('active');
+  if(t.dataset.broker !== 'MT5') toast(t.dataset.broker + ' is not available yet. Use MT5.');
+}));
+$('pwToggle').addEventListener('click', () => { const f = $('mtPassword'); f.type = f.type === 'password' ? 'text' : 'password'; });
+$('mtLogin').value = store.get('mt_login'); $('mtServer').value = store.get('mt_server');
+function renderBroker(){
+  const linked = !!store.get('session_id');
+  $('brokerDot').classList.toggle('on', linked);
+  $('brokerStatusLine').textContent = linked ? ('Linked: account ' + store.get('mt_login') + ' ✓') : 'Not linked yet';
+}
+hooks.brokerLogin = {enter: renderBroker};
+$('linkMt5Btn').addEventListener('click', async () => {
+  const login = $('mtLogin').value.trim(), password = $('mtPassword').value, server = $('mtServer').value.trim();
+  if(!login || !password || !server){ toast('Login, password and server are required', true); return; }
+  if(store.get('license_valid') !== '1'){ toast('Activate a license first', true); go('licenseScreen'); return; }
+  const b = $('linkMt5Btn'); b.disabled = true; b.textContent = 'Connecting…';
+  try{
+    const symbols = (store.get('symbols','XAUUSD, US30')).split(',').map(s => s.trim()).filter(Boolean);
+    const {ok, data} = await api('/login', {login:Number(login), password, server, lot_size:parseFloat(store.get('lot_size','0.01')) || 0.01, symbols, license_key:store.get('license_key'), device_id:deviceId, mode:'NORMAL'});
+    if(ok && data.success){
+      store.set('mt_login', login); store.set('mt_server', server); store.set('session_id', data.session_id || '');
+      if(data.account && data.account.name){ const li = licInfo(); li.student_name = data.account.name; store.set('license_info', JSON.stringify(li)); }
+      $('mtPassword').value = ''; toast('MT5 account linked'); renderBroker();
+    }else toast(data.error || data.message || 'Login failed', true);
+  }catch(e){ toast(e.message, true); }
+  b.disabled = false; b.textContent = 'LINK MT5 ACCOUNT';
+});
+
+/* ---------------- home ---------------- */
+function scanQuota(){
+  const today = new Date().toISOString().slice(0,10);
+  let q; try{ q = JSON.parse(store.get('quota','{}')); }catch(e){ q = {}; }
+  const limit = hasFullAccess() ? 30 : 5;
+  if(q.date !== today) return {used:0, limit: q.limit || limit, known:false};
+  return {used:q.used||0, limit:q.limit||limit, known:true};
+}
+function saveQuota(used, limit){ store.set('quota', JSON.stringify({date:new Date().toISOString().slice(0,10), used, limit})); }
+function renderHome(){
+  const li = licInfo();
+  $('studentName').textContent = li.student_name || 'Student';
+  $('homeLicenseLine').textContent = li.duration_type ? ('License: ' + li.duration_type + (hasFullAccess() ? ' (Premium)' : '') + (li.remaining_days != null ? ' · ' + li.remaining_days + ' days' : '')) : 'License: —';
+  $('modeLabel').textContent = 'NORMAL';
+  $('statusStrip').textContent = 'Viper EA | ' + (store.get('symbols','XAUUSD, US30') || 'No symbols') + ' | YOUR Lot: ' + (store.get('lot_size','0.01'));
+  const q = scanQuota(); $('scansLeft').textContent = '✦ ' + Math.max(0, q.limit - q.used) + ' of ' + q.limit + ' scans left today';
+  const on = store.get('bot_on') === '1';
+  $('botState').classList.toggle('running', on); $('botStateLabel').textContent = on ? 'Bot Running' : 'Bot Stopped';
+  $('startLabel').textContent = on ? 'STOP' : 'START'; $('startIcon').textContent = on ? '■' : '▶'; $('startBtn').classList.toggle('run', on);
+}
+hooks.home = {enter: renderHome};
+$('startBtn').addEventListener('click', async () => {
+  if(!store.get('session_id')){ toast('Link your MT5 account first (MetaTrader tab).', true); go('brokerLogin'); return; }
+  const on = store.get('bot_on') !== '1'; store.set('bot_on', on ? '1' : '0'); renderHome(); toast(on ? 'Bot started' : 'Bot stopped');
+  try{ await api('/update_student_settings', {login:Number(store.get('mt_login')), lot_size:parseFloat(store.get('lot_size','0.01')) || 0.01, symbols:store.get('symbols','').split(',').map(s => s.trim()).filter(Boolean), license_key:store.get('license_key'), device_id:deviceId, auto_execute:on}); }catch(e){}
+});
+$('symbolsBtn').addEventListener('click', openSettings);
+$('removeBtn').addEventListener('click', () => {
+  if(!confirm('Remove your license from this phone?')) return;
+  ['license_key','license_valid','license_info','session_id','bot_on'].forEach(k => store.set(k, ''));
+  toast('License removed'); setTimeout(() => go('addEA', {reset:true}), 500);
+});
+$('robotRow').addEventListener('click', () => go('brokerLogin'));
+$('openScanner').addEventListener('click', () => { if(store.get('license_valid') !== '1'){ toast('Activate a license first', true); go('licenseScreen'); return; } go('scanChoose'); });
+
+/* ---------------- settings ---------------- */
+function openSettings(){ $('bridgeUrlInput').value = store.get('bridge_url'); $('symbolsInput').value = store.get('symbols','XAUUSD, US30'); $('lotSizeInput').value = store.get('lot_size','0.01'); $('settingsModal').classList.add('show'); }
+$('settingsGear').addEventListener('click', openSettings);
+$('settingsClose').addEventListener('click', () => $('settingsModal').classList.remove('show'));
+$('settingsSave').addEventListener('click', async () => {
+  let url = $('bridgeUrlInput').value.trim();
+  if(url){
+    if(!/^https?:\/\//i.test(url)){ toast('The bridge URL must start with https://', true); return; }
+    const host = url.replace(/^https?:\/\//i, '').split('/')[0];
+    if(/^https:/i.test(url) && /^\d{1,3}(\.\d{1,3}){3}(:\d+)?$/.test(host)){ toast('A raw IP address cannot use https. Use your Cloudflare Tunnel address (https://xxxx.trycloudflare.com).', true); return; }
+    if(/^http:/i.test(url) && location.protocol === 'https:'){ toast('This page is secure, so the bridge also needs an https:// address. Use your Cloudflare Tunnel address.', true); return; }
+  }
+  store.set('bridge_url', url); store.set('symbols', $('symbolsInput').value.trim()); store.set('lot_size', $('lotSizeInput').value.trim() || '0.01');
+  $('settingsModal').classList.remove('show'); renderHome(); toast('Settings saved');
+  if(store.get('mt_login') && store.get('license_valid') === '1'){
+    try{ await api('/update_student_settings', {login:Number(store.get('mt_login')), lot_size:parseFloat(store.get('lot_size')) || 0.01, symbols:store.get('symbols').split(',').map(s => s.trim()).filter(Boolean), license_key:store.get('license_key'), device_id:deviceId}); }catch(e){}
+  }
+});
+
+/* ---------------- scanner: choose + setup ---------------- */
+function updatePills(){ const q = scanQuota(); const t = Math.max(0, q.limit - q.used) + '/' + q.limit + ' scans'; ['scanPill1','scanPill2','scanPill3','scanPill4'].forEach(id => $(id).textContent = t); }
+hooks.scanChoose = {enter: updatePills};
+$('optLive').addEventListener('click', () => go('scanSetup'));
+$('optNews').addEventListener('click', () => go('newsSetup'));
+
+function stratObj(key){ return STRATEGIES.find(s => s.key === key) || STRATEGIES[4]; }
+function renderSetup(){
+  updatePills();
+  if(!strategyAllowed(stratObj(S.strategy))) S.strategy = 'trend_following';
+  $('stratLabel').textContent = stratObj(S.strategy).icon + ' ' + stratObj(S.strategy).name;
+  $('uploadBox').style.display = S.source === 'upload' ? '' : 'none'; $('liveBox').style.display = S.source === 'live' ? '' : 'none';
+  document.querySelectorAll('#srcSeg button').forEach(b => b.classList.toggle('on', b.dataset.src === S.source));
+  $('tfChips').innerHTML = TIMEFRAMES.map(t => '<span class="chip' + (t === S.tf ? ' sel' : '') + '" data-tf="' + t + '" role="button" tabindex="0">' + t + '</span>').join('');
+  const dz = $('dropzone');
+  if(S.imageUrl){ dz.innerHTML = '<img alt="Chart preview" src="' + S.imageUrl + '">'; } else { dz.innerHTML = '<div class="big">📊</div><div>No chart selected</div><div style="font-size:12px">Take a photo or pick from gallery</div>'; }
+  const ready = S.source === 'live' || !!S.imageB64; const b = $('scanBtn'); b.disabled = !ready || S.scanning; b.textContent = ready ? '✦ SCAN CHART' : 'SELECT A CHART FIRST';
+}
+hooks.scanSetup = {enter: renderSetup};
+$('scanSymbol').value = store.get('scan_symbol'); $('scanSymbol').addEventListener('input', e => store.set('scan_symbol', e.target.value.trim().toUpperCase()));
+document.querySelectorAll('#srcSeg button').forEach(b => b.addEventListener('click', () => { S.source = b.dataset.src; renderSetup(); }));
+$('tfChips').addEventListener('click', e => { const c = e.target.closest('[data-tf]'); if(c){ S.tf = c.dataset.tf; renderSetup(); } });
+$('pickStrategy').addEventListener('click', () => go('strategyPick'));
+$('camBtn').addEventListener('click', () => $('fileCam').click()); $('galBtn').addEventListener('click', () => $('fileGal').click());
+$('dropzone').addEventListener('click', () => $('fileGal').click());
+['fileCam','fileGal'].forEach(id => $(id).addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if(f) loadImage(f); e.target.value = ''; }));
+
+function loadImage(file){
+  if(!/^image\//.test(file.type)){ toast('Pick an image file', true); return; }
+  const url = URL.createObjectURL(file); const img = new Image();
+  img.onload = () => {
+    try{
+      const max = 1400; const sc = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      const data = c.toDataURL('image/jpeg', 0.82);
+      S.imageB64 = data.split(',')[1]; S.imageMime = 'image/jpeg'; S.imageUrl = data;
+    }catch(e){ toast('Could not read that image', true); }
+    URL.revokeObjectURL(url); renderSetup();
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); toast('Could not read that image', true); };
+  img.src = url;
+}
+
+/* ---------------- scanner: strategies ---------------- */
+function renderStrategies(){
+  $('stratList').innerHTML = STRATEGIES.map(s => {
+    const ok = strategyAllowed(s), sel = s.key === S.strategy;
+    return '<button class="strat' + (sel ? ' sel' : '') + (ok ? '' : ' locked') + '" data-key="' + s.key + '"><div class="si">' + s.icon + '</div><div><div class="t">' + esc(s.name) + '</div><div class="s">' + esc(s.desc) + '</div></div><div class="radio">' + (ok ? (sel ? '✓' : '') : '🔒') + '</div></button>';
+  }).join('') + (hasFullAccess() ? '' : '<p class="muted" style="font-size:12.5px;line-height:1.5;margin:6px 2px">🔒 Locked strategies unlock with a 6-month, 1-year or Lifetime license.</p>');
+}
+hooks.strategyPick = {enter: renderStrategies};
+$('stratList').addEventListener('click', e => {
+  const b = e.target.closest('[data-key]'); if(!b) return; const s = stratObj(b.dataset.key);
+  if(!strategyAllowed(s)){ toast('This strategy needs a 6-month, 1-year or Lifetime license.', true); return; }
+  S.strategy = s.key; store.set('strategy', s.key); back();
+});
+
+/* ---------------- scanner: run ---------------- */
+let stepTimer = null;
+function startSteps(labels){
+  let i = 0; const list = $('stepList');
+  const draw = () => { list.innerHTML = labels.map((l, n) => '<div class="step ' + (n < i ? 'done' : n === i ? 'now' : '') + '"><div class="dot">' + (n < i ? '✓' : '') + '</div>' + esc(l) + '</div>').join(''); $('progBar').style.width = Math.min(92, 8 + i * 24) + '%'; };
+  draw(); clearInterval(stepTimer);
+  stepTimer = setInterval(() => { if(i < labels.length - 1){ i++; draw(); } }, 1400);
+}
+function stopSteps(){ clearInterval(stepTimer); }
+hooks.scanning = {leave: stopSteps};
+$('scanningBack').addEventListener('click', back);
+
+$('scanBtn').addEventListener('click', runScan);
+async function runScan(){
+  const symbol = $('scanSymbol').value.trim().toUpperCase();
+  if(!symbol){ toast('Type the symbol first, for example XAUUSD', true); $('scanSymbol').focus(); return; }
+  const strat = stratObj(S.strategy); if(!strategyAllowed(strat)){ toast('This strategy needs a 6-month, 1-year or Lifetime license.', true); return; }
+  if(S.scanning) return; S.scanning = true;
+  $('scanError').style.display = 'none'; $('scanProgCard').style.display = ''; $('scanSub').textContent = 'Sending your request to AI';
+  go('scanning');
+  startSteps(['Checking your license', S.source === 'live' ? 'Loading live candles' : 'Reading your chart', 'Applying ' + strat.name, 'Building your trade setup']);
+  try{
+    const body = Object.assign(authBody(), {mode:S.source, strategy:S.strategy, symbol, timeframe:S.tf});
+    if(S.source === 'upload'){ body.image_base64 = S.imageB64; body.mime_type = S.imageMime; }
+    const {ok, data, status} = await api('/ai/scan', body);
+    stopSteps();
+    if(ok && data.success){
+      S.lastScan = data; saveQuota(data.scans_used, data.scans_limit); $('progBar').style.width = '100%';
+      if(current() === 'scanning') go('scanResult', {replace:true}); else toast('Your ' + data.symbol + ' scan is ready. Open AI Chart Scanner again to ask about it.');
+    }else if(current() !== 'scanning'){
+      /* user already left this screen: nothing to show */
+    }else{
+      if(data.license_required){ toast(data.message || 'License problem', true); go('licenseScreen', {reset:true}); }
+      else scanFail(data.message || 'The scan failed. Try again.', status);
+    }
+  }catch(e){ stopSteps(); if(current() === 'scanning') scanFail(e.message); }
+  S.scanning = false;
+}
+function scanFail(msg){
+  $('scanProgCard').style.display = 'none'; const box = $('scanError'); box.style.display = '';
+  box.innerHTML = '<div class="err-box">' + esc(msg) + '</div><button class="btn ghost" style="margin-top:14px" id="errBack">‹ BACK</button>';
+  $('errBack').onclick = back;
+}
+
+/* ---------------- scanner: result ---------------- */
+function biasColor(b){ return b === 'BULLISH' ? 'var(--green)' : b === 'BEARISH' ? 'var(--red)' : 'var(--muted)'; }
+function renderResult(){
+  updatePills(); const r = S.lastScan; if(!r){ $('resultBody').innerHTML = ''; return; }
+  const col = biasColor(r.bias), su = r.setup;
+  let h = '<div class="bias-head"><div class="b" style="color:' + col + '">' + (r.bias === 'BULLISH' ? '▲ ' : r.bias === 'BEARISH' ? '▼ ' : '● ') + esc(r.bias) + '</div><div class="sub">' + esc(r.symbol) + ' · ' + esc(r.strategy_name) + ' · ' + (r.mode === 'live' ? 'Live candles' : 'Screenshot') + '</div></div>';
+  h += '<div class="card" style="margin-top:12px"><div class="label">AI CONFIDENCE: ' + r.confidence + '%</div><div class="conf"><i style="width:' + r.confidence + '%;background:' + col + '"></i></div>';
+  h += '<div class="quote" style="margin-top:10px">“' + esc(r.summary) + '”</div></div>';
+  if(r.patterns && r.patterns.length){ h += '<div class="cyan-title">DETECTED PATTERNS</div><div>' + r.patterns.map(p => '<span class="chip">' + esc(p) + '</span>').join('') + '</div>'; }
+  if(r.support != null || r.resistance != null){
+    h += '<div class="cyan-title">KEY LEVELS</div><div class="kl"><div class="card"><div class="label" style="color:var(--green)">SUPPORT</div><div class="n">' + fmt(r.support) + '</div></div><div class="card"><div class="label" style="color:var(--red)">RESISTANCE</div><div class="n">' + fmt(r.resistance) + '</div></div></div>';
+  }
+  if(su){
+    const dc = su.direction === 'BUY' ? 'var(--green)' : 'var(--red)';
+    h += '<div class="cyan-title" style="margin-top:18px">TRADE SETUP</div><div class="card">'
+      + '<div class="setup-row"><span class="muted">Symbol</span><span class="v">' + esc(su.symbol) + '</span></div>'
+      + '<div class="setup-row"><span class="muted">Direction</span><span class="v" style="color:' + dc + '">' + su.direction + '</span></div>'
+      + '<div class="setup-row"><span class="muted">Entry</span><span class="v" style="color:var(--cyan)">' + fmt(su.entry) + '</span></div>'
+      + '<div class="setup-row"><span class="muted">Stop Loss</span><span class="v" style="color:var(--red)">' + fmt(su.sl) + '</span></div>'
+      + '<div class="setup-row"><span class="muted">Take Profit</span><span class="v" style="color:var(--green)">' + fmt(su.tp) + '</span></div>'
+      + '<span class="rr">' + esc(su.rr) + '</span>'
+      + (r.reasoning ? '<div class="quote" style="margin-top:12px;font-size:13px">“' + esc(r.reasoning) + '”</div>' : '') + '</div>';
+    h += '<button class="btn ' + (su.direction === 'BUY' ? 'buy' : 'sell') + '" id="execBtn">' + (su.direction === 'BUY' ? '▲ EXECUTE BUY' : '▼ EXECUTE SELL') + '</button>';
+  }else{
+    h += '<div class="card" style="margin-top:16px"><div class="label">NO TRADE SETUP</div><div style="font-size:14px;line-height:1.5;margin-top:4px">' + esc(r.note || 'No clear setup for this strategy.') + '</div></div>';
+  }
+  h += '<div class="row" style="margin-top:12px"><button class="btn ghost" id="shareBtn">⤴ SHARE</button><button class="btn ghost" id="againBtn">↻ SCAN AGAIN</button></div>';
+  h += '<p class="disclaimer">AI signals are educational. Always verify before trading.</p>';
+  $('resultBody').innerHTML = h; $('resultBody').parentElement.scrollTop = 0;
+  if($('execBtn')) $('execBtn').onclick = openTradeSettings;
+  $('shareBtn').onclick = shareResult; $('againBtn').onclick = () => { S.imageB64 = ''; S.imageUrl = ''; go('scanSetup', {replace:true}); };
+}
+hooks.scanResult = {enter: renderResult};
+async function shareResult(){
+  const r = S.lastScan; if(!r) return; const su = r.setup;
+  const text = 'Viper EA AI scan — ' + r.symbol + ' (' + r.strategy_name + '): ' + r.bias + ', confidence ' + r.confidence + '%. ' + r.summary + (su ? ' Setup: ' + su.direction + ' @ ' + fmt(su.entry) + ', SL ' + fmt(su.sl) + ', TP ' + fmt(su.tp) + ' (' + su.rr + ').' : '') + ' Educational only.';
+  try{ if(navigator.share){ await navigator.share({text}); return; } }catch(e){ if(e && e.name === 'AbortError') return; }
+  try{ await navigator.clipboard.writeText(text); toast('Copied to your clipboard'); }catch(e){ toast('Sharing is not available on this browser', true); }
+}
+
+/* ---------------- execute: settings -> confirm -> place ---------------- */
+let tradeCfg = {lot:0.01, n:1}, placing = false;
+function openTradeSettings(){
+  const r = S.lastScan; if(!r || !r.setup) return;
+  if(!store.get('session_id')){ toast('Link your MT5 account first (MetaTrader tab).', true); go('brokerLogin'); return; }
+  $('tradeModalTitle').textContent = 'Trade Settings — ' + r.setup.symbol;
+  $('lotInput').value = store.get('lot_size','0.01'); $('numInput').value = tradeCfg.n || 1; $('numLabel').textContent = 'Number of Trades (1 - ' + MAX_TRADES + ')';
+  $('lotChips').innerHTML = LOT_CHIPS.map(c => '<span class="chip" data-lot="' + c + '" role="button" tabindex="0">' + c + '</span>').join('');
+  $('tradeModal').classList.add('show');
+}
+$('lotChips').addEventListener('click', e => { const c = e.target.closest('[data-lot]'); if(c) $('lotInput').value = c.dataset.lot; });
+$('tradeCancel').addEventListener('click', () => $('tradeModal').classList.remove('show'));
+$('tradeContinue').addEventListener('click', () => {
+  const lot = parseFloat($('lotInput').value), n = parseInt($('numInput').value, 10);
+  if(!(lot >= 0.01) || lot > MAX_LOT){ toast('Lot size must be between 0.01 and ' + MAX_LOT, true); return; }
+  if(!(n >= 1) || n > MAX_TRADES){ toast('Number of trades must be 1 to ' + MAX_TRADES, true); return; }
+  tradeCfg = {lot: Math.round(lot * 100) / 100, n}; $('tradeModal').classList.remove('show'); openConfirm();
+});
+function openConfirm(){
+  const r = S.lastScan, su = r.setup; S.execId = newId();
+  $('confirmBody').innerHTML = '<b>Symbol</b>: ' + esc(su.symbol) + '<br><b>Direction</b>: ' + su.direction + '<br><b>Entry</b>: ~' + fmt(su.entry) + '<br><b>Take Profit</b>: ' + fmt(su.tp) + '<br><b>Stop Loss</b>: ' + fmt(su.sl) + '<br><b>Lots</b>: ' + tradeCfg.lot.toFixed(2) + ' × ' + tradeCfg.n + ' = ' + (tradeCfg.lot * tradeCfg.n).toFixed(2) + '<br><b>R:R Ratio</b>: ' + esc(su.rr) + '<br><b>Strategy</b>: ' + esc(r.strategy_name);
+  $('confirmNote').textContent = 'This places the trade at market price on your MT5 account ' + store.get('mt_login') + '. Real money is at risk.';
+  $('confirmErr').style.display = 'none'; $('confirmGo').disabled = false; $('confirmGo').textContent = 'EXECUTE'; $('confirmCancel').textContent = 'CANCEL'; placing = false; $('confirmModal').classList.add('show');
+}
+$('confirmCancel').addEventListener('click', () => { if(!placing) $('confirmModal').classList.remove('show'); });
+$('confirmGo').addEventListener('click', async () => {
+  const su = S.lastScan.setup, b = $('confirmGo'); placing = true; b.disabled = true; b.textContent = 'PLACING…'; $('confirmErr').style.display = 'none';
+  try{
+    const {ok, data, status} = await api('/ai/execute', {session_id:store.get('session_id'), symbol:su.symbol, direction:su.direction, sl:su.sl, tp:su.tp, lot:tradeCfg.lot, num_trades:tradeCfg.n, strategy:S.lastScan.strategy, request_id:S.execId}, {timeout:120000});
+    if(ok && data.success){
+      placing = false; S.lastExec = data; $('confirmModal').classList.remove('show'); go('tradeChart'); return;
+    }
+    placing = false;
+    if(status === 401){ store.set('session_id',''); $('confirmModal').classList.remove('show'); toast(data.message || 'Session expired. Link your account again.', true); go('brokerLogin'); return; }
+    $('confirmErr').textContent = data.message || 'The trade could not be placed.'; $('confirmErr').style.display = 'block';
+    if(status === 409 || status === 400){ b.textContent = 'EXECUTE'; b.disabled = true; $('confirmCancel').textContent = 'CLOSE'; return; }
+  }catch(e){ placing = false; $('confirmErr').textContent = e.message + ' Check your account before trying again: the trade may already be open.'; $('confirmErr').style.display = 'block'; }
+  b.disabled = false; b.textContent = 'TRY AGAIN';
+});
+
+/* ---------------- trade chart ---------------- */
+let chartTimer = null, chartTf = 'M5', chartData = null;
+function renderTradeChart(){
+  const x = S.lastExec; if(!x) return;
+  $('chartTitle').textContent = x.symbol + ' · ' + x.direction;
+  $('execHead').textContent = '✓ ' + x.placed + ' trade' + (x.placed === 1 ? '' : 's') + ' placed';
+  $('execSub').textContent = x.direction + ' ' + x.symbol + ' · lot ' + Number(x.lot).toFixed(2) + ' each · account ' + x.account + (x.placed < x.requested ? ' · ' + x.message : '');
+  $('ticketList').innerHTML = (x.tickets || []).map(t => '<div class="ticket"><span>Ticket #' + esc(t) + '</span><span style="color:' + (x.direction === 'BUY' ? 'var(--green)' : 'var(--red)') + '">' + x.direction + ' ' + Number(x.lot).toFixed(2) + '</span></div>').join('');
+  $('tfChips2').innerHTML = ['M1','M5','M15','H1'].map(t => '<span class="chip' + (t === chartTf ? ' sel' : '') + '" data-tf2="' + t + '" role="button" tabindex="0">' + t + '</span>').join('');
+  loadChart(); clearInterval(chartTimer); chartTimer = setInterval(loadChart, 5000);
+}
+hooks.tradeChart = {enter: renderTradeChart, leave: () => clearInterval(chartTimer)};
+$('tfChips2').addEventListener('click', e => { const c = e.target.closest('[data-tf2]'); if(c){ chartTf = c.dataset.tf2; chartData = null; renderTradeChart(); } });
+async function loadChart(){
+  const x = S.lastExec; if(!x) return;
+  try{
+    const {ok, data} = await api('/ai/candles', Object.assign(authBody(), {symbol:x.symbol, timeframe:chartTf, count:70}), {timeout:25000});
+    if(ok && data.success){ chartData = data; if(data.live) $('chartPrice').textContent = fmt(x.direction === 'BUY' ? data.live.bid : data.live.ask); drawChart(); }
+  }catch(e){}
+}
+function drawChart(){
+  const cv = $('tradeCanvas'), x = S.lastExec; if(!cv || !x || !chartData) return;
+  const dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight; if(!W || !H) return;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  const g = cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,W,H);
+  const cs = chartData.candles; const axisW = 64, pad = 10, cw = W - axisW - pad;
+  let lo = Math.min.apply(null, cs.map(c => c.l)), hi = Math.max.apply(null, cs.map(c => c.h));
+  [x.entry, x.sl, x.tp].forEach(v => { if(v != null){ lo = Math.min(lo, v); hi = Math.max(hi, v); } });
+  const span = (hi - lo) || 1; lo -= span * 0.06; hi += span * 0.06;
+  const Y = v => H - 8 - (v - lo) / (hi - lo) * (H - 16);
+  g.font = '11px -apple-system,Segoe UI,Roboto,sans-serif'; g.textBaseline = 'middle';
+  g.strokeStyle = 'rgba(127,166,192,.12)'; g.fillStyle = '#6d8ea3'; g.lineWidth = 1;
+  for(let i = 0; i <= 4; i++){ const v = lo + (hi - lo) * i / 4, y = Y(v); g.beginPath(); g.moveTo(0, y); g.lineTo(cw, y); g.stroke(); g.fillText(fmt(v), cw + 6, y); }
+  const step = cw / cs.length, bw = Math.max(2, step * 0.62);
+  cs.forEach((c, i) => {
+    const cx = i * step + step / 2, up = c.c >= c.o; g.strokeStyle = g.fillStyle = up ? '#35e07a' : '#ef5b52';
+    g.beginPath(); g.moveTo(cx, Y(c.h)); g.lineTo(cx, Y(c.l)); g.stroke();
+    const y1 = Y(Math.max(c.o, c.c)), y2 = Y(Math.min(c.o, c.c)); g.fillRect(cx - bw / 2, y1, bw, Math.max(1.5, y2 - y1));
+  });
+  const line = (v, col, label) => { if(v == null) return; const y = Y(v); g.setLineDash([6,4]); g.strokeStyle = col; g.lineWidth = 1.4; g.beginPath(); g.moveTo(0, y); g.lineTo(cw, y); g.stroke(); g.setLineDash([]); g.fillStyle = col; g.fillRect(cw + 1, y - 9, axisW - 2, 18); g.fillStyle = '#04141c'; g.font = 'bold 10.5px -apple-system,Segoe UI,Roboto,sans-serif'; g.fillText(label, cw + 5, y); };
+  line(x.tp, '#35e07a', 'TP ' + fmt(x.tp)); line(x.sl, '#ef5b52', 'SL ' + fmt(x.sl)); line(x.entry, '#2bd9ff', 'IN ' + fmt(x.entry));
+}
+window.addEventListener('resize', () => { if(current() === 'tradeChart') drawChart(); });
+$('chartBack').addEventListener('click', goHome); $('chartHome').addEventListener('click', goHome);
+
+/* ---------------- news predictor ---------------- */
+$('newsSymbol').value = store.get('scan_symbol');
+hooks.newsSetup = {enter: updatePills};
+$('newsBtn').addEventListener('click', async () => {
+  const symbol = $('newsSymbol').value.trim().toUpperCase(); if(!symbol){ toast('Type the symbol first, for example XAUUSD', true); return; }
+  store.set('scan_symbol', symbol); const b = $('newsBtn'); b.disabled = true; b.textContent = 'READING THE NEWS…'; $('newsBody').innerHTML = '';
+  try{
+    const {ok, data} = await api('/ai/news', Object.assign(authBody(), {symbol}));
+    if(ok && data.success){ saveQuota(data.scans_used, data.scans_limit); updatePills(); renderNews(data); }
+    else if(data.license_required){ toast(data.message, true); go('licenseScreen', {reset:true}); }
+    else $('newsBody').innerHTML = '<div class="err-box">' + esc(data.message || 'The prediction failed.') + '</div>';
+  }catch(e){ $('newsBody').innerHTML = '<div class="err-box">' + esc(e.message) + '</div>'; }
+  b.disabled = false; b.textContent = 'PREDICT';
+});
+function renderNews(n){
+  S.lastNews = n;
+  const col = biasColor(n.bias);
+  let h = '<div class="bias-head"><div class="b" style="color:' + col + '">' + (n.bias === 'BULLISH' ? '▲ ' : n.bias === 'BEARISH' ? '▼ ' : '● ') + esc(n.bias) + '</div><div class="sub">' + esc(n.symbol) + ' · news outlook</div></div>';
+  h += '<div class="card" style="margin-top:12px"><div class="label">AI CONFIDENCE: ' + n.confidence + '%</div><div class="conf"><i style="width:' + n.confidence + '%;background:' + col + '"></i></div><div class="quote" style="margin-top:10px">“' + esc(n.summary) + '”</div></div>';
+  if(n.drivers.length) h += '<div class="cyan-title">MAIN DRIVERS</div><div class="card">' + n.drivers.map(d => '<div class="setup-row" style="font-size:13.5px"><span>' + esc(d) + '</span></div>').join('') + '</div>';
+  if(n.upcoming_events.length) h += '<div class="cyan-title">UPCOMING EVENTS</div><div class="card">' + n.upcoming_events.map(d => '<div class="setup-row" style="font-size:13.5px"><span>' + esc(d) + '</span></div>').join('') + '</div>';
+  if(n.risk_note) h += '<div class="card"><div class="label">RISK NOTE</div><div style="font-size:13.5px;line-height:1.45">' + esc(n.risk_note) + '</div></div>';
+  if(!n.grounded) h += '<p class="muted" style="font-size:12px;line-height:1.45">This outlook comes from the AI’s general knowledge, not live headlines.</p>';
+  $('newsBody').innerHTML = h;
+}
+
+/* ---------------- voice assistant ---------------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const synth = window.speechSynthesis;
+const chat = []; let voiceOn = store.get('voice_on', '1') === '1'; let rec = null, listening = false, pendingFromMic = false;
+const SUGGEST = ['Explain my last scan', 'When will the robot trade?', 'What does this setup mean?'];
+function lang(){ return navigator.language || 'en-US'; }
+function setVoiceIcon(){ $('voiceToggle').textContent = voiceOn ? '🔊' : '🔇'; $('voiceToggle').classList.toggle('off', !voiceOn); }
+setVoiceIcon();
+$('voiceToggle').addEventListener('click', () => { voiceOn = !voiceOn; store.set('voice_on', voiceOn ? '1' : '0'); setVoiceIcon(); if(!voiceOn && synth) synth.cancel(); });
+function unlockSpeech(){ try{ if(synth){ const u = new SpeechSynthesisUtterance(''); synth.speak(u); } }catch(e){} }
+function speak(text){ if(!voiceOn || !synth) return; try{ synth.cancel(); const u = new SpeechSynthesisUtterance(text.replace(/[\u{1F300}-\u{1FAFF}☀-➿]/gu, '')); u.lang = lang(); u.rate = 1.02; synth.speak(u); }catch(e){} }
+function drawMsgs(){
+  const box = $('msgs');
+  box.innerHTML = chat.length ? chat.map(m => '<div class="msg ' + (m.role === 'user' ? 'u' : 'a') + (m.typing ? ' typing' : '') + '">' + esc(m.text) + '</div>').join('') : '<div class="msg a">Hi, I’m Viper. Ask me about your latest scan, or when the robot will trade. Tap the mic and speak.</div>';
+  box.scrollTop = box.scrollHeight;
+  $('sugg').innerHTML = chat.length ? '' : SUGGEST.map(s => '<span class="chip" data-sg="' + esc(s) + '" role="button" tabindex="0">' + esc(s) + '</span>').join('');
+}
+$('sugg').addEventListener('click', e => { const c = e.target.closest('[data-sg]'); if(c) ask(c.dataset.sg, false); });
+function openSheet(){ $('sheetBack').classList.add('show'); drawMsgs(); }
+function closeSheet(){ $('sheetBack').classList.remove('show'); stopListening(); if(synth) synth.cancel(); }
+$('sheetClose').addEventListener('click', closeSheet);
+$('sheetBack').addEventListener('click', e => { if(e.target === $('sheetBack')) closeSheet(); });
+$('askSend').addEventListener('click', () => { const v = $('askInput').value.trim(); if(v){ $('askInput').value = ''; ask(v, false); } });
+$('askInput').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); $('askSend').click(); } });
+
+async function ask(text, fromMic){
+  if(store.get('license_valid') !== '1'){ toast('Activate a license first', true); return; }
+  openSheet(); chat.push({role:'user', text}); chat.push({role:'model', text:'Thinking…', typing:true}); drawMsgs();
+  const history = chat.filter(m => !m.typing).slice(-8, -1).map(m => ({role:m.role, text:m.text}));
+  let reply;
+  try{
+    const {ok, data} = await api('/ai/assistant', Object.assign(authBody(), {session_id:store.get('session_id'), message:text, history, last_scan:contextForAssistant(), lang:lang()}), {timeout:40000});
+    reply = ok && data.success ? data.reply : (data.message || 'I could not answer that right now.');
+  }catch(e){ reply = e.message; }
+  chat.pop(); chat.push({role:'model', text:reply}); drawMsgs();
+  if(fromMic || voiceOn) speak(reply);
+}
+
+function contextForAssistant(){
+  if(S.lastScan && S.lastScan.bias) return S.lastScan;
+  const n = S.lastNews; return n ? {symbol:n.symbol, strategy_name:'News outlook', bias:n.bias, confidence:n.confidence, summary:n.summary, patterns:n.drivers} : null;
+}
+function startListening(){
+  if(!SR){ openSheet(); toast('Voice input is not supported in this browser. Use Chrome, or type your question.', true); return; }
+  if(listening){ stopListening(); return; }
+  unlockSpeech(); if(synth) synth.cancel();
+  rec = new SR(); rec.lang = lang(); rec.interimResults = true; rec.maxAlternatives = 1; rec.continuous = false;
+  let finalText = '', interim = '';
+  rec.onstart = () => { listening = true; $('micBtn').classList.add('listening'); $('listenPill').textContent = 'Listening… speak now'; $('listenPill').classList.add('show'); };
+  rec.onresult = e => { interim = ''; for(let i = e.resultIndex; i < e.results.length; i++){ const t = e.results[i][0].transcript; if(e.results[i].isFinal) finalText += t; else interim += t; } $('listenPill').textContent = '🎙 ' + (finalText + interim || 'Listening…'); };
+  rec.onerror = e => { const m = {'not-allowed':'Microphone permission was blocked. Allow it in your browser settings.','service-not-allowed':'Microphone permission was blocked. Allow it in your browser settings.','no-speech':'I did not hear anything. Tap the mic and try again.','network':'Voice recognition needs an internet connection.','audio-capture':'No microphone found.'}; toast(m[e.error] || 'Voice input error: ' + e.error, true); finalText = ''; };
+  rec.onend = () => { listening = false; $('micBtn').classList.remove('listening'); $('listenPill').classList.remove('show'); const t = (finalText || '').trim(); rec = null; if(t) ask(t, true); };
+  try{ rec.start(); }catch(e){ listening = false; toast('Could not start the microphone', true); }
+}
+function stopListening(){ if(rec){ try{ rec.stop(); }catch(e){} } }
+$('micBtn').addEventListener('click', startListening);
+$('askMic').addEventListener('click', startListening);
+$('chatBtn').addEventListener('click', openSheet);
+
+/* ---------------- boot ---------------- */
+$('settingsModal').addEventListener('click', e => { if(e.target === $('settingsModal')) $('settingsModal').classList.remove('show'); });
+if(store.get('email')){ if(store.get('license_key') && store.get('license_valid') === '1') go('home', {reset:true}); else if(store.get('license_key') === '' && store.get('license_info') === '' && store.get('email')) go('addEA', {reset:true}); else go('licenseScreen', {reset:true}); }
+else { stack.push('onboard'); show('onboard'); }
+})();
+</script>
+</body>
+</html>
